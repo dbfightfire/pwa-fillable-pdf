@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fillable PDF Maker (PWA)</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1e90ff">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; max-width: 900px;}
+    header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    h1 { margin: 0; font-size: 1.6rem; }
+    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    label { display:block; margin: 8px 0 4px; font-weight: 600; }
+    input[type="text"], input[type="email"], textarea { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid #cbd5e1;}
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { padding: 10px 14px; border: none; border-radius: 10px; background:#1e90ff; color:#fff; font-weight:600; cursor:pointer; }
+    button.secondary { background:#111827; }
+    button.ghost { background:#f3f4f6; color:#111827; }
+    .small { font-size: .9rem; color:#6b7280; }
+    .actions { display:flex; gap: 10px; flex-wrap:wrap; }
+    .hint { background: #eef6ff; border: 1px dashed #93c5fd; padding: 10px 12px; border-radius: 10px; color:#1e40af;}
+    footer { margin-top: 24px; color: #6b7280; font-size: .9rem;}
+    hr{ border:none; height:1px; background:#e5e7eb; margin:16px 0;}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon-192.png" alt="" width="40" height="40" />
+    <h1>Fillable PDF Maker (PWA)</h1>
+    <div style="flex:1"></div>
+    <button id="installBtn" class="ghost" hidden>Install App</button>
+  </header>
+
+  <div class="card">
+    <p><strong>What is this?</strong> This app can create a <em>fillable</em> PDF (users type in the PDF later), or export a PDF pre-filled from the form below. It works offline once installed.</p>
+    <div class="hint">Tip: You can change the fields without coding—open <code>app.js</code> and edit the <code>FIELDS</code> list.</div>
+  </div>
+
+  <div class="card">
+    <h3>Form (HTML → PDF)</h3>
+    <div class="row">
+      <div>
+        <label for="name">Name</label>
+        <input id="name" type="text" placeholder="Jane Doe" />
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="jane@example.com" />
+      </div>
+    </div>
+    <label style="margin-top:8px;">
+      <input type="checkbox" id="agree" /> I agree to the terms
+    </label>
+    <label for="notes">Notes</label>
+    <textarea id="notes" rows="4" placeholder="Anything else..."></textarea>
+    <label style="margin-top:8px;">
+      <input type="checkbox" id="lockFields" /> Make filled PDF read-only (not editable)
+    </label>
+    <div class="actions" style="margin-top:12px;">
+      <button id="btnMakeBlank">Download empty <em>fillable</em> PDF</button>
+      <button id="btnMakeFilled" class="secondary">Download PDF with my answers</button>
+    </div>
+    <p class="small">Advanced: You can also upload a PDF that already has form fields and we will try to fill matching fields.</p>
+    <input type="file" id="templatePdf" accept="application/pdf" />
+  </div>
+
+  <div class="card">
+    <h3>How it works (Plain-English)</h3>
+    <ol>
+      <li>Press <strong>Download empty fillable PDF</strong> → we build a new PDF with fields you can type into.</li>
+      <li>Or fill the web form and press <strong>Download PDF with my answers</strong> → we put your answers into a PDF.</li>
+      <li>Click <strong>Install App</strong> to use it offline like a normal app.</li>
+    </ol>
+  </div>
+
+  <footer>
+    <hr/>
+    <div>Made with <code>pdf-lib</code> in your browser. No server needed.</div>
+  </footer>
+
+  <!-- pdf-lib via CDN; first load online, then cached by the service worker -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+
+    // Simple install prompt
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.hidden = false;
+    });
+    installBtn?.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.hidden = true;
+    });
+  </script>
+</body>
+</html>
